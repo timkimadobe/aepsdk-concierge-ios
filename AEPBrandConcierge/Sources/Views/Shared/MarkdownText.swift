@@ -19,7 +19,7 @@ struct MarkdownText: UIViewRepresentable {
 
     let attributed: NSAttributedString
     var maxWidth: CGFloat?
-    var onOpenLink: ((URL) -> Void)?
+    var onOpenLink: (URL) -> Void
 
     final class AutoSizingTextView: UITextView {
         var targetWidth: CGFloat = 0 { didSet { if oldValue != targetWidth { invalidateIntrinsicContentSize() } } }

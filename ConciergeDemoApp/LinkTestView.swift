@@ -42,6 +42,26 @@ struct LinkTestView: View {
             category: .deepLink
         ),
         TestLink(
+            label: "Deep Link (telprompt)",
+            urlString: "telprompt://+15551234567",
+            category: .deepLink
+        ),
+        TestLink(
+            label: "Deep Link (sms)",
+            urlString: "sms:+15551234567",
+            category: .deepLink
+        ),
+        TestLink(
+            label: "Deep Link (facetime)",
+            urlString: "facetime://+15551234567",
+            category: .deepLink
+        ),
+        TestLink(
+            label: "Deep Link (facetime-audio)",
+            urlString: "facetime-audio://+15551234567",
+            category: .deepLink
+        ),
+        TestLink(
             label: "Apple Maps (search query)",
             urlString: "https://maps.apple.com/?q=coffee",
             category: .universalLink

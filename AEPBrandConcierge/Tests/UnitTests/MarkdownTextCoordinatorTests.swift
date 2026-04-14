@@ -26,14 +26,11 @@ final class MarkdownTextCoordinatorTests: XCTestCase {
     override func tearDown() {
         super.tearDown()
         textView = nil
-        ConciergeLinkHandler.urlOpener = { url, options, completion in
-            UIApplication.shared.open(url, options: options, completionHandler: completion)
-        }
     }
 
     // MARK: - Helpers
 
-    private func makeCoordinator(onOpenLink: ((URL) -> Void)? = nil) -> MarkdownTextCoordinator {
+    private func makeCoordinator(onOpenLink: @escaping (URL) -> Void) -> MarkdownTextCoordinator {
         let markdownText = MarkdownText(
             attributed: NSAttributedString(string: "test"),
             onOpenLink: onOpenLink
@@ -50,7 +47,7 @@ final class MarkdownTextCoordinatorTests: XCTestCase {
         )
     }
 
-    // MARK: - Web link routing
+    // MARK: - All links route through onOpenLink
 
     func testShouldInteractWith_httpLink_callsOnOpenLink() {
         let url = URL(string: "http://www.example.com")!
@@ -72,7 +69,49 @@ final class MarkdownTextCoordinatorTests: XCTestCase {
         XCTAssertEqual(receivedURL, url)
     }
 
-    func testShouldInteractWith_httpLink_returnsFalse() {
+    func testShouldInteractWith_telLink_callsOnOpenLink() {
+        let url = URL(string: "tel:+1234567890")!
+        var receivedURL: URL?
+
+        let coordinator = makeCoordinator(onOpenLink: { receivedURL = $0 })
+        _ = interact(coordinator: coordinator, url: url)
+
+        XCTAssertEqual(receivedURL, url)
+    }
+
+    func testShouldInteractWith_mailtoLink_callsOnOpenLink() {
+        let url = URL(string: "mailto:user@example.com")!
+        var receivedURL: URL?
+
+        let coordinator = makeCoordinator(onOpenLink: { receivedURL = $0 })
+        _ = interact(coordinator: coordinator, url: url)
+
+        XCTAssertEqual(receivedURL, url)
+    }
+
+    func testShouldInteractWith_smsLink_callsOnOpenLink() {
+        let url = URL(string: "sms:+1234567890")!
+        var receivedURL: URL?
+
+        let coordinator = makeCoordinator(onOpenLink: { receivedURL = $0 })
+        _ = interact(coordinator: coordinator, url: url)
+
+        XCTAssertEqual(receivedURL, url)
+    }
+
+    func testShouldInteractWith_customSchemeLink_callsOnOpenLink() {
+        let url = URL(string: "myapp://example.com/path")!
+        var receivedURL: URL?
+
+        let coordinator = makeCoordinator(onOpenLink: { receivedURL = $0 })
+        _ = interact(coordinator: coordinator, url: url)
+
+        XCTAssertEqual(receivedURL, url)
+    }
+
+    // MARK: - Always returns false to suppress UITextView default handling
+
+    func testShouldInteractWith_httpsLink_returnsFalse() {
         let url = URL(string: "https://www.example.com")!
         let coordinator = makeCoordinator(onOpenLink: { _ in })
 
@@ -81,140 +120,12 @@ final class MarkdownTextCoordinatorTests: XCTestCase {
         XCTAssertFalse(result)
     }
 
-    func testShouldInteractWith_httpLink_withNoOnOpenLink_returnsFalse() {
-        let url = URL(string: "https://www.example.com")!
-        let coordinator = makeCoordinator(onOpenLink: nil)
+    func testShouldInteractWith_telLink_returnsFalse() {
+        let url = URL(string: "tel:+1234567890")!
+        let coordinator = makeCoordinator(onOpenLink: { _ in })
 
         let result = interact(coordinator: coordinator, url: url)
 
         XCTAssertFalse(result)
-    }
-
-    func testShouldInteractWith_httpLink_doesNotCallUrlOpener() {
-        let url = URL(string: "https://www.example.com")!
-        var urlOpenerCalled = false
-        ConciergeLinkHandler.urlOpener = { _, _, _ in urlOpenerCalled = true }
-
-        let coordinator = makeCoordinator()
-        _ = interact(coordinator: coordinator, url: url)
-
-        XCTAssertFalse(urlOpenerCalled)
-    }
-
-    // MARK: - Non-web link routing
-
-    func testShouldInteractWith_telLink_callsUrlOpener() {
-        let url = URL(string: "tel:+1234567890")!
-        var urlOpenerCalled = false
-        ConciergeLinkHandler.urlOpener = { _, _, completion in
-            urlOpenerCalled = true
-            completion?(true)
-        }
-
-        let coordinator = makeCoordinator()
-        _ = interact(coordinator: coordinator, url: url)
-
-        XCTAssertTrue(urlOpenerCalled)
-    }
-
-    func testShouldInteractWith_mailtoLink_callsUrlOpener() {
-        let url = URL(string: "mailto:user@example.com")!
-        var urlOpenerCalled = false
-        ConciergeLinkHandler.urlOpener = { _, _, completion in
-            urlOpenerCalled = true
-            completion?(true)
-        }
-
-        let coordinator = makeCoordinator()
-        _ = interact(coordinator: coordinator, url: url)
-
-        XCTAssertTrue(urlOpenerCalled)
-    }
-
-    func testShouldInteractWith_nonWebLink_whenUrlOpenerSucceeds_returnsFalse() {
-        let url = URL(string: "tel:+1234567890")!
-        ConciergeLinkHandler.urlOpener = { _, _, completion in completion?(true) }
-
-        let coordinator = makeCoordinator()
-        let result = interact(coordinator: coordinator, url: url)
-
-        XCTAssertFalse(result)
-    }
-
-    func testShouldInteractWith_nonWebLink_whenUrlOpenerFails_returnsTrue() {
-        let url = URL(string: "tel:+1234567890")!
-        ConciergeLinkHandler.urlOpener = { _, _, completion in completion?(false) }
-
-        let coordinator = makeCoordinator()
-        let result = interact(coordinator: coordinator, url: url)
-
-        XCTAssertTrue(result)
-    }
-
-    func testShouldInteractWith_telLink_passesCorrectURLToUrlOpener() {
-        let url = URL(string: "tel:+1234567890")!
-        var receivedURL: URL?
-        ConciergeLinkHandler.urlOpener = { opened, _, completion in
-            receivedURL = opened
-            completion?(true)
-        }
-
-        let coordinator = makeCoordinator()
-        _ = interact(coordinator: coordinator, url: url)
-
-        XCTAssertEqual(receivedURL, url)
-    }
-
-    func testShouldInteractWith_nonWebLink_doesNotPassUniversalLinksOption() {
-        let url = URL(string: "tel:+1234567890")!
-        var receivedOptions: [UIApplication.OpenExternalURLOptionsKey: Any]?
-        ConciergeLinkHandler.urlOpener = { _, options, completion in
-            receivedOptions = options
-            completion?(true)
-        }
-
-        let coordinator = makeCoordinator()
-        _ = interact(coordinator: coordinator, url: url)
-
-        XCTAssertNil(receivedOptions?[.universalLinksOnly])
-    }
-
-    func testShouldInteractWith_nonWebLink_doesNotCallOnOpenLink() {
-        let url = URL(string: "tel:+1234567890")!
-        var onOpenLinkCalled = false
-        ConciergeLinkHandler.urlOpener = { _, _, completion in completion?(true) }
-
-        let coordinator = makeCoordinator(onOpenLink: { _ in onOpenLinkCalled = true })
-        _ = interact(coordinator: coordinator, url: url)
-
-        XCTAssertFalse(onOpenLinkCalled)
-    }
-
-    func testShouldInteractWith_smsLink_callsUrlOpener() {
-        let url = URL(string: "sms:+1234567890")!
-        var urlOpenerCalled = false
-        ConciergeLinkHandler.urlOpener = { _, _, completion in
-            urlOpenerCalled = true
-            completion?(true)
-        }
-
-        let coordinator = makeCoordinator()
-        _ = interact(coordinator: coordinator, url: url)
-
-        XCTAssertTrue(urlOpenerCalled)
-    }
-
-    func testShouldInteractWith_customSchemeLink_callsUrlOpener() {
-        let url = URL(string: "myapp://example.com/path")!
-        var urlOpenerCalled = false
-        ConciergeLinkHandler.urlOpener = { _, _, completion in
-            urlOpenerCalled = true
-            completion?(true)
-        }
-
-        let coordinator = makeCoordinator()
-        _ = interact(coordinator: coordinator, url: url)
-
-        XCTAssertTrue(urlOpenerCalled)
     }
 }

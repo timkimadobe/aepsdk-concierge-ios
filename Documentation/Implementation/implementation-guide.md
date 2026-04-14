@@ -166,22 +166,6 @@ When a user taps a link in the chat, the SDK routes it through `ConciergeLinkHan
 
 **Default link handling flow:** host `handleLink` callback (if provided) → universal link check → WebView overlay (http/https) or system app (other schemes).
 
-### Info.plist requirements for non-web links
-
-iOS requires URL schemes to be declared in `LSApplicationQueriesSchemes` before `UIApplication.open` can open them. Add the following to your app's `Info.plist` to enable `tel:`, `mailto:`, and `sms:` link handling:
-
-```xml
-<key>LSApplicationQueriesSchemes</key>
-<array>
-    <string>tel</string>
-    <string>telprompt</string>
-    <string>mailto</string>
-    <string>sms</string>
-</array>
-```
-
-Add any additional custom schemes your app needs to handle here as well.
-
 ### Custom link handling
 
 All three public APIs accept an optional `handleLink` closure that is called before the SDK's default routing. Return `true` to claim the URL (the SDK takes no further action). Return `false` to let the SDK handle it normally.

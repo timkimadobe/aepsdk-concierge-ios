@@ -22,7 +22,7 @@ struct MarkdownBlockView: View {
     var spacing: CGFloat = 8
     var citationMarkers: [CitationMarker] = []
     var citationStyle: CitationStyle = .default
-    var onOpenLink: ((URL) -> Void)?
+    var onOpenLink: (URL) -> Void
 
     var body: some View {
         let blocks = MarkdownRenderer.buildBlocks(
@@ -108,7 +108,7 @@ struct MarkdownBlockView: View {
 /// Quote block with left rule, supports nested content by stacking paragraphs.
 private struct QuoteBlockView: View {
     let blocks: [MarkdownRenderer.MarkdownBlock]
-    let onOpenLink: ((URL) -> Void)?
+    let onOpenLink: (URL) -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -164,7 +164,7 @@ private struct QuoteBlockView: View {
 private struct ListBlockView: View {
     let type: MarkdownRenderer.ListType
     let items: [[MarkdownRenderer.MarkdownBlock]]
-    let onOpenLink: ((URL) -> Void)?
+    let onOpenLink: (URL) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
